@@ -66,8 +66,8 @@ run() { docker run --rm --memory=4g --cpus=4 "$IMAGE" bash -lc "$1" 2>&1; }
 run 'python -c "import sys;print(sys.version)"'          | grep -q "3.11" && ok "Python 3.11"  || bad "Python 3.11"
 run 'java -version'                                      | grep -q "17\." && ok "Java 17"      || bad "Java 17"
 run 'python -c "import pyspark;print(pyspark.__version__)"' | grep -q "3.5" && ok "PySpark 3.5" || bad "PySpark 3.5"
-run 'python -c "from pyspark.sql import SparkSession as S;s=S.builder.master(\"local[2]\").getOrCreate();print(s.range(100).selectExpr(\"id%%7 k\").groupBy(\"k\").count().count())"' \
-    | grep -q "^7$" && ok "real shuffle executes" || bad "real shuffle executes"
+run 'python -c "from pyspark.sql import SparkSession as S;s=S.builder.master(\"local[2]\").config(\"spark.ui.showConsoleProgress\",\"false\").getOrCreate();print(\"SHUFFLE_RESULT=\"+str(s.range(100).selectExpr(\"id%7 k\").groupBy(\"k\").count().count()))"' \
+    | tr -d "\r" | grep -q "SHUFFLE_RESULT=7" && ok "real shuffle executes" || bad "real shuffle executes"
 run 'id -u' | grep -q "^1000$" && ok "runs as uid 1000 (not root)" || bad "non-root uid"
 
 note "4. Data build (profile=$PROFILE)"
