@@ -1,0 +1,4 @@
+docker/vendor/*.tar.gz
+docker/vendor/*.whl
+data-seed/*.parquet
+data-seed/*.csv

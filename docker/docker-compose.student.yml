@@ -1,0 +1,57 @@
+# ============================================================================
+# STUDENT compose file — pulls a prebuilt image, never builds one.
+#
+# Use this one with students. The other file (docker-compose.yml) has a
+# `build:` section and is for YOU, on your machine, when you change something.
+#
+#   docker compose -f docker/docker-compose.student.yml up
+#
+# Why the split: building the image downloads ~1.5 GB, takes 5-10 minutes and
+# has maybe six ways to fail. Doing that 30 times in parallel on 30 different
+# laptops is 30 chances to lose a student before session 1. You build it once,
+# push it, and they pull a finished thing.
+# ============================================================================
+name: bigdata-course
+
+services:
+  lab:
+    # REPLACE-ME -> your GitHub username, lowercase. See RUNBOOK.md step 7.
+    image: ghcr.io/REPLACE-ME/bigdata-course:1.0.0
+    container_name: bigdata-lab
+    pull_policy: always
+
+    mem_limit: 4g
+    memswap_limit: 4g
+    cpus: 4.0
+    shm_size: 1g
+
+    ports:
+      - "8888:8888"     # JupyterLab
+      - "4040:4040"     # Spark UI — session 7 is dead without this
+      - "4041:4041"
+
+    environment:
+      DATA_PROFILE: "full"
+      SEED_URL: "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+      ZONES_URL: "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+    volumes:
+      - ../notebooks:/work/notebooks
+      - ../solutions:/work/solutions
+      - course-data:/data
+      - spark-events:/tmp/spark-events
+
+    working_dir: /work
+    stdin_open: true
+    tty: true
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8888/api || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 900s
+
+volumes:
+  course-data:
+  spark-events:

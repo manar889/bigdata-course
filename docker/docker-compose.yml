@@ -1,0 +1,71 @@
+# ============================================================================
+# Run from the repo root:   docker compose -f docker/docker-compose.yml up
+#
+# THE MOST IMPORTANT LINES IN THIS FILE ARE THE RESOURCE LIMITS.
+#
+# Your S1 TP is "load an oversized CSV, measure time and memory, watch it crawl
+# or die". That is a MEASUREMENT exercise. If one student has 32 GB and another
+# has 8 GB, they get different answers, the debrief comparison collapses, and
+# "the single-machine wall" becomes a story instead of a fact. Same for the
+# multiprocessing speedup in TODO 2: on a 2-core laptop it is ~1.1x and the
+# student concludes partitioning does not work.
+#
+# So the container is pinned to 4 GB / 4 CPUs for everyone. Students whose
+# machine cannot spare that use the COLAB fallback, which is pinned to the same
+# numbers by a different mechanism.
+# ============================================================================
+name: bigdata-course
+
+services:
+  lab:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ghcr.io/manar889/bigdata-course:1.0.0
+    container_name: bigdata-lab
+
+    # ---- the pinned box -----------------------------------------------
+    mem_limit: 4g
+    memswap_limit: 4g          # no swap: the wall must be a wall, not a slow crawl
+    cpus: 4.0
+    shm_size: 1g               # Spark shuffle spills here; 64m default causes weird failures
+
+    ports:
+      - "8888:8888"            # JupyterLab
+      - "4040:4040"            # Spark UI  <-- S7 IS DEAD WITHOUT THIS LINE
+      - "4041:4041"            # second SparkSession lands here
+
+    environment:
+      DATA_PROFILE: "full"     # full | small | tiny
+      # Point these at your own hosting (GitHub Release asset works fine, 2 GB/asset).
+      # Leave SEED_URL empty and the container builds from synthetic data instead —
+      # schema-identical, so every TP still runs if nyc.gov is unreachable.
+      SEED_URL: "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+      ZONES_URL: "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+      JUPYTER_ENABLE_LAB: "yes"
+      # Belt and braces — also set in the Dockerfile. See the note there.
+      SPARK_LOCAL_IP: "0.0.0.0"
+
+    volumes:
+      - ../notebooks:/work/notebooks      # bind: students edit these, you collect them
+      - ../solutions:/work/solutions      # you drop solution notebooks in here 24h later
+      - course-data:/data                 # named volume: survives rebuilds, ~5 GB
+      - spark-events:/tmp/spark-events    # event logs for before/after evidence
+
+    working_dir: /work
+    stdin_open: true
+    tty: true
+    # NOT unless-stopped. If the data build fails, restarting just reruns the failed
+    # build forever, JupyterLab never starts, and port 8888 looks dead with no error.
+    restart: "no"
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8888/api || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 900s        # long: first boot builds ~5 GB of TP data
+
+volumes:
+  course-data:
+  spark-events:

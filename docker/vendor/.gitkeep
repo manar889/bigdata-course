@@ -1,0 +1,3 @@
+Large source tarballs live here so Docker never downloads them.
+Populate with: bash scripts/fetch_pyspark.sh
+Do NOT commit the .tar.gz to git (303 MB). .gitignore already excludes it.
