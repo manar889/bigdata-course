@@ -12,7 +12,7 @@
 # =============================================================================
 set -uo pipefail
 
-IMAGE="${IMAGE:-ghcr.io/REPLACE-ME/bigdata-course:1.0.0}"
+IMAGE="${IMAGE:-ghcr.io/manar889/bigdata-course:1.1.0}"
 PROFILE="full"
 PUSH=0
 for a in "$@"; do
