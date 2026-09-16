@@ -21,7 +21,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: ghcr.io/manar889/bigdata-course:1.0.0
+    image: ghcr.io/manar889/bigdata-course:1.1.0
     container_name: bigdata-lab
 
     # ---- the pinned box -----------------------------------------------
